@@ -1,8 +1,8 @@
 import Foundation
 
 var coreChecks = 0
-func check(_ condition: @autoclosure () -> Bool, _ label: String) {
-    guard condition() else { print("FAIL: \(label)"); exit(1) }
+func check(_ condition: Bool, _ label: String) {
+    guard condition else { print("FAIL: \(label)"); exit(1) }
     coreChecks += 1; print("PASS: \(label)")
 }
 func rejects(_ label: String, _ action: () throws -> Void) {

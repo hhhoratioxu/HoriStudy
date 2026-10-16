@@ -27,6 +27,7 @@ else
 fi
 /bin/cp -X Config/Info.plist "$app/Contents/Info.plist"
 /bin/cp -X Resources/chaoxing-adapter.js "$app/Contents/Resources/"
+/bin/cp -X Resources/ai-chat-adapter.js "$app/Contents/Resources/"
 if [[ -f Resources/AppIcon.icns ]]; then /bin/cp -X Resources/AppIcon.icns "$app/Contents/Resources/"; fi
 /usr/bin/codesign --force --sign - --options runtime "$app"
 /usr/bin/codesign --verify --deep --strict "$app"

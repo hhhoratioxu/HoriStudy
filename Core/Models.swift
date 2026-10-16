@@ -58,6 +58,7 @@ struct CheckedAnswer: Codable {
     let verification: String
     let eligible: Bool
     let reason: String
+    var attribution: String? = nil
 }
 
 enum AnswerGate {
@@ -88,7 +89,7 @@ enum AnswerGate {
     }
 
     static func check(_ first: AnswerDraft, _ second: AnswerDraft,
-                      question: StudyQuestion, sources: [Citation]) -> CheckedAnswer {
+                      question: StudyQuestion, sources: [Citation], requireSources: Bool = true) -> CheckedAnswer {
         var reason = validate(first, for: question) ?? validate(second, for: question)
         if reason == nil {
             let same = question.kind.isChoice ?
@@ -99,12 +100,18 @@ enum AnswerGate {
         let known = Set(sources.filter { $0.safeURL != nil }.map(\.id))
         let firstIDs = Set(first.evidenceIDs)
         let secondIDs = Set(second.evidenceIDs)
-        if reason == nil && (firstIDs.isEmpty || secondIDs.isEmpty ||
+        let agreed = reason == nil
+        if requireSources && reason == nil && (firstIDs.isEmpty || secondIDs.isEmpty ||
                             !firstIDs.isSubset(of: known) || !secondIDs.isSubset(of: known)) {
             reason = "答案缺少可核对的检索来源，或引用了不存在的来源。"
         }
-        return CheckedAnswer(draft: first, sources: sources, verification: "两轮一致 · 检索有来源",
-                             eligible: reason == nil,
+        if !requireSources && reason == nil {
+            reason = "未联网查证，也没有可核对的检索来源。这是模型答案草稿；两轮一致仍可能一起出错。请自行核对后再填写。"
+        }
+        let verification = !agreed ? "核验未通过" : !requireSources ? "两轮一致 · 未联网草稿" :
+            reason == nil ? "两轮一致 · 检索有来源" : "来源核验未通过"
+        return CheckedAnswer(draft: first, sources: sources, verification: verification,
+                             eligible: requireSources && reason == nil,
                              reason: reason ?? "两次独立请求给出一致答案。相同模型及相同来源仍可能同时出错。")
     }
 }

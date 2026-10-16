@@ -2,10 +2,18 @@ import Foundation
 import Security
 
 enum KeychainStore {
-    static let service = "com.hhhoratioxu.HoriStudy.openai"
-    static func read() throws -> String {
+    static func contains(scope: CredentialScope) throws -> Bool {
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service, kSecAttrAccount as String: "api-key",
+            kSecAttrService as String: scope.service, kSecAttrAccount as String: scope.account,
+            kSecReturnAttributes as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
+        let status = SecItemCopyMatching(query as CFDictionary, nil)
+        if status == errSecItemNotFound { return false }
+        guard status == errSecSuccess else { throw StudyError.message("无法读取钥匙串状态（\(status)）。") }
+        return true
+    }
+    static func read(scope: CredentialScope) throws -> String {
+        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: scope.service, kSecAttrAccount as String: scope.account,
             kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
         var result: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
@@ -16,9 +24,9 @@ enum KeychainStore {
         }
         return text
     }
-    static func save(_ key: String) throws {
+    static func save(_ key: String, scope: CredentialScope) throws {
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service, kSecAttrAccount as String: "api-key"]
+            kSecAttrService as String: scope.service, kSecAttrAccount as String: scope.account]
         if key.isEmpty {
             let status = SecItemDelete(query as CFDictionary)
             guard status == errSecSuccess || status == errSecItemNotFound else {

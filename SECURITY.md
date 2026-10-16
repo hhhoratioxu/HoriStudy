@@ -2,10 +2,14 @@
 
 Please do not post API keys, session cookies, student IDs, exam questions, or authenticated course URLs in public issues.
 
-HoriStudy stores an OpenAI API key in macOS Keychain and uses a separate WebKit content world for page automation. The page adapter never receives the key. Requests go directly to the official OpenAI API. Browser sessions remain in this app's WebKit website store.
+The default connection opens the real ChatGPT, DeepSeek, Doubao or Gemini website, each in a separate persistent WebKit website store. Users handle login and verification themselves. It does not copy cookies from another browser or extract account tokens. Website prompts may enter that service's conversation history and use its account allowance.
+
+Optional API keys are stored separately in macOS Keychain. Custom-service keys are scoped to an exact normalized HTTPS Base URL. Built-in API providers use fixed official destinations. API requests reject redirects and exclude website cookies. Injected page adapters run in separate WebKit content worlds and never receive API keys.
+
+Web answers must match a fresh request nonce, complete JSON shape and website completion state. Automatic filling of agreed web drafts is off by default. Website links are not independently fetched or authenticated as evidence. New conversations do not disable provider memory, and model agreement cannot guarantee correctness. Sends are not automatically retried after dispatch.
 
 Answers, retrieved pages, and imported banks are untrusted data. They cannot supply executable commands. The automation engine accepts a small set of explicit operations and validates the current question before writing.
 
 Navigation diagnostics stay on the user's Mac and contain only schemes, hostnames, event types, and error codes. They exclude paths, query strings, forms, page contents, and cookies. Do not attach local diagnostics to public reports if they identify a private institution host.
 
-Version 0.1.1 is a preview with local fixture coverage. It has not received an independent security audit, an Apple notarization, or live-account acceptance testing. Submit sensitive reports through the repository owner's GitHub contact options without exposing secrets publicly.
+Version 0.2.0 is a preview with local fixture coverage. Four-provider subscription sign-in, live coursework, and the new native settings UI still require acceptance testing. It has not received an independent security audit or Apple notarization. Submit sensitive reports through the repository owner's GitHub contact options without exposing secrets publicly.

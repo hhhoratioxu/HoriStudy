@@ -19,7 +19,7 @@ struct HoriStudyApp: App {
                 Button("设置…") { store.showSettings = true }.keyboardShortcut(",")
             }
             CommandMenu("学习") {
-                Button("打开学习通") { store.browser.open() }.keyboardShortcut("o")
+                Button("打开学习通") { store.showWebAI = false; store.browser.open() }.keyboardShortcut("o")
                 Button("识别当前页") { store.scan() }.keyboardShortcut("r", modifiers: [.command, .shift])
                 Button("开始核验") { store.start() }.disabled(store.running)
                 Button("暂停全部") { store.pause() }.keyboardShortcut(".")
@@ -47,7 +47,7 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 8) {
                         Text("HoriStudy").font(.system(size: 17, weight: .bold, design: .rounded))
-                        Text("Preview 2").font(.system(size: 10, weight: .semibold)).foregroundStyle(accent)
+                        Text("Preview 3").font(.system(size: 10, weight: .semibold)).foregroundStyle(accent)
                     }
                     Text("学习通 · 资料查证与网页自动化").font(.caption).foregroundStyle(.secondary)
                 }
@@ -55,10 +55,12 @@ struct ContentView: View {
                 Label("来源可查", systemImage: "link").font(.caption).foregroundStyle(.secondary)
                 Label("有疑问就暂停", systemImage: "pause.circle").font(.caption).foregroundStyle(.secondary)
                 Button { store.showSettings = true } label: { Image(systemName: "slider.horizontal.3") }
-                    .help("设置模型与 API 密钥")
+                    .help("选择网页登录或 API 连接")
+                Button("课程网页") { store.showWebAI = false }
+                Button("AI 网页") { store.openWebAI(store.webPreferences.answer) }
             }.padding(.horizontal, 20).padding(.vertical, 12)
             Divider()
-            HStack(spacing: 8) {
+            if !store.showWebAI { HStack(spacing: 8) {
                 Button { browser.webView.goBack() } label: { Image(systemName: "chevron.left") }.help("后退")
                 Button { browser.webView.goForward() } label: { Image(systemName: "chevron.right") }.help("前进")
                 Button { browser.webView.reload() } label: { Image(systemName: "arrow.clockwise") }.help("刷新")
@@ -69,8 +71,8 @@ struct ContentView: View {
                 }.padding(8).background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 7))
                 Button("打开学习通") { showWelcome = false; browser.open() }
                 Button { showDiagnostics = true } label: { Image(systemName: "stethoscope") }.help("登录诊断")
-            }.buttonStyle(.borderless).padding(.horizontal, 16).padding(.vertical, 8)
-            if browser.pages.count > 1 {
+            }.buttonStyle(.borderless).padding(.horizontal, 16).padding(.vertical, 8) }
+            if !store.showWebAI && browser.pages.count > 1 {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(browser.pages) { page in
@@ -88,10 +90,13 @@ struct ContentView: View {
             }
             Divider()
             HSplitView {
-                ZStack {
+                Group {
+                    if store.showWebAI { WebAIWorkspaceView(store: store, workspace: store.webAI) }
+                    else { ZStack {
                     BrowserView(browser: browser)
                     if showWelcome { welcome }
                     if browser.loading { VStack { ProgressView().progressViewStyle(.linear); Spacer() }.allowsHitTesting(false) }
+                    } }
                 }.frame(minWidth: 650)
                 inspector.frame(minWidth: 350, idealWidth: 385, maxWidth: 460)
             }
@@ -102,6 +107,7 @@ struct ContentView: View {
                 Text(store.status).font(.caption).lineLimit(2)
                 Spacer()
                 Text("本次 API 请求 \(store.requestCount)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                Text("网页消息 \(store.webMessageCount)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                 Button("暂停全部") { store.pause() }.buttonStyle(.borderless).keyboardShortcut(".")
             }.padding(.horizontal, 16).padding(.vertical, 9).background(.bar)
         }
@@ -136,7 +142,7 @@ struct ContentView: View {
                 }
                 VStack(alignment: .leading, spacing: 18) {
                     welcomeStep("1", "打开学习通", "在网页中登录，进入具体课程、作业或试卷。")
-                    welcomeStep("2", "识别并核验", "导入题库优先；未命中时联网查证，再做第二轮比对。")
+                    welcomeStep("2", "登录 AI 网页", "ChatGPT、DeepSeek、豆包、Gemini，使用网页中的账号与订阅。")
                     welcomeStep("3", "核对后提交", "符合条件的答案可以自动填写，提交前由你复核。")
                 }
                 HStack(spacing: 12) {
@@ -177,7 +183,9 @@ struct ContentView: View {
                 }.controlSize(.large)
                 Toggle("核验通过后自动填写", isOn: $store.autoFill).font(.caption).disabled(store.running)
                 Toggle("本页全部填完后进入下一题", isOn: $store.autoNextQuestion).font(.caption).disabled(store.running)
-                Text("每道未命中题库的题目最多使用 3 次 API 请求及联网检索，按你的 API 账号计费。")
+                Text(store.answerConnectionMode == .web ?
+                     "当前：\(store.webPreferences.answer.title) 网页作答 + \(store.webPreferences.review.title) 新会话复核。使用网站账号权益；网页引用仍需核对。" :
+                     "当前：\(store.aiPreferences.answer.provider.title) API 作答 · 每题 \(store.aiPreferences.requestLimit) 次请求\(store.aiPreferences.useWebResearch ? "，含联网检索" : "，未联网草稿")，按你的 API 账号计费。")
                     .font(.system(size: 10)).foregroundStyle(.secondary)
                 HStack {
                     Button("填入已核验答案") { store.fillEligible() }.disabled(store.eligibleCount == 0 || store.running)
@@ -224,12 +232,16 @@ struct ContentView: View {
                                     Text("答案 \(index + 1)：\(value)").font(.caption).textSelection(.enabled)
                                 }
                                 Text(answer.draft.explanation).font(.caption).textSelection(.enabled)
+                                if let attribution = answer.attribution { Text(attribution).font(.system(size: 10)).foregroundStyle(.secondary).textSelection(.enabled) }
                                 Text(answer.reason).font(.system(size: 10)).foregroundStyle(.secondary)
                                 if !answer.sources.isEmpty {
                                     Text("核对来源").font(.caption.bold()).padding(.top, 3)
                                     ForEach(Array(answer.sources.enumerated()), id: \.offset) { _, source in
                                         if let url = source.safeURL { Link(destination: url) { Label(source.title, systemImage: "arrow.up.right.square").font(.caption).multilineTextAlignment(.leading) } }
                                     }
+                                }
+                                if !answer.eligible && !row.filled && AnswerGate.validate(answer.draft, for: row.question) == nil {
+                                    Button("我已核对，填入本题…") { store.fillSelectedAfterReview() }.font(.caption).disabled(store.running)
                                 }
                             }
                             if !row.error.isEmpty { Text(row.error).font(.caption).foregroundStyle(.orange) }
@@ -254,49 +266,165 @@ struct ContentView: View {
 struct SettingsView: View {
     @ObservedObject var store: StudyStore
     @Environment(\.dismiss) private var dismiss
-    @State private var key = ""
-    @State private var message = ""
-    @State private var keyWasLoaded = false
+    @State private var credentialProvider = AIProvider.openAI
+    private var busy: Bool { store.running || store.aiTestRunning }
+    private var answerProvider: Binding<AIProvider> {
+        Binding(get: { store.aiPreferences.answer.provider }, set: { value in
+            store.chooseAnswerProvider(value); credentialProvider = value
+        })
+    }
+    private var reviewProvider: Binding<AIProvider> {
+        Binding(get: { store.aiPreferences.review.provider }, set: { value in
+            store.aiPreferences.review = AIModelChoice(provider: value)
+        })
+    }
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack { Image(systemName: "slider.horizontal.3").foregroundStyle(accent); Text("连接与核验设置").font(.title2.bold()); Spacer(); Button("完成") { dismiss() } }
-            VStack(alignment: .leading, spacing: 10) {
-                Text("OpenAI API").font(.headline)
-                Text("输入你自己的 API 密钥。密钥只保存在这台 Mac 的钥匙串，网页脚本无法读取。")
-                    .font(.caption).foregroundStyle(.secondary)
-                SecureField("API 密钥", text: $key).textFieldStyle(.roundedBorder)
-                HStack {
-                    Button("保存到钥匙串") {
-                        do { try KeychainStore.save(key.trimmingCharacters(in: .whitespacesAndNewlines)); store.keyConfigured = !key.isEmpty; message = key.isEmpty ? "已移除本机 API 密钥。" : "密钥已保存。首次核验时会实际连接 API。" }
-                        catch { message = error.localizedDescription }
-                    }.disabled(!keyWasLoaded)
-                    Button("移除密钥") { do { try KeychainStore.save(""); key = ""; store.keyConfigured = false; message = "已移除密钥。" } catch { message = error.localizedDescription } }
-                    Spacer()
-                    Link("获取 API 密钥", destination: URL(string: "https://platform.openai.com/api-keys")!)
-                }.font(.caption)
-                if !message.isEmpty { Text(message).font(.caption).foregroundStyle(.secondary) }
+            Picker("连接方式", selection: $store.answerConnectionMode) {
+                ForEach(AnswerConnectionMode.allCases) { Text($0.title).tag($0) }
+            }.pickerStyle(.segmented).disabled(busy)
+            ScrollView {
+                if store.answerConnectionMode == .web {
+                    webSettings
+                } else {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("作答与复核").font(.headline)
+                        HStack {
+                            Picker("作答服务", selection: answerProvider) { ForEach(AIProvider.allCases) { Text($0.title).tag($0) } }.frame(width: 285)
+                            TextField("作答模型 ID", text: $store.aiPreferences.answer.model).textFieldStyle(.roundedBorder)
+                        }
+                        HStack {
+                            Picker("复核服务", selection: reviewProvider) { ForEach(AIProvider.allCases) { Text($0.title).tag($0) } }.frame(width: 285)
+                            TextField("复核模型 ID", text: $store.aiPreferences.review.model).textFieldStyle(.roundedBorder)
+                        }
+                        Text("可以用同一家或不同服务独立回答两次。模型 ID 需要在对应账号中可用；豆包也可填写你自己的推理接入点 ID。")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Toggle("联网查证（使用 OpenAI）", isOn: $store.aiPreferences.useWebResearch)
+                        if store.aiPreferences.useWebResearch {
+                            HStack { Text("检索模型").frame(width: 76, alignment: .leading); TextField("支持 web_search 的 OpenAI 模型 ID", text: $store.aiPreferences.researchModel).textFieldStyle(.roundedBorder) }
+                            Text("需额外保存 OpenAI 密钥。每题先检索，再由所选服务作答与复核，共 3 次请求；符合核验条件时可以自动填写。")
+                                .font(.caption).foregroundStyle(.secondary)
+                        } else {
+                            Text("每题 2 次请求，无需 OpenAI 密钥（除非你选择它作答或复核）。答案仅为未联网草稿，不会自动填写；你核对后可填入本题。")
+                                .font(.caption).foregroundStyle(.orange)
+                        }
+                        Stepper("每次最多处理 \(store.maxQuestions) 道题", value: $store.maxQuestions, in: 1...100)
+                    }.disabled(busy)
+                    Divider()
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("各服务的 API 密钥").font(.headline)
+                        Picker("配置服务", selection: $credentialProvider) { ForEach(AIProvider.allCases) { Text($0.title).tag($0) } }
+                        if credentialProvider == .custom {
+                            TextField("HTTPS Base URL，例如 https://api.example.com/v1", text: $store.aiPreferences.customBaseURL).textFieldStyle(.roundedBorder)
+                            Toggle("接口支持 JSON Object 格式", isOn: $store.aiPreferences.customJSONMode).font(.caption)
+                            Text("仅支持 Chat Completions 兼容 API。填写服务提供的 Base URL；网页聊天地址不能直接使用。改变地址后需要单独保存该地址的密钥。")
+                                .font(.caption).foregroundStyle(.secondary)
+                        } else if let endpoint = try? credentialProvider.baseURL() {
+                            Text("请求发送至：\(endpoint.absoluteString)").font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                        }
+                        ProviderKeyView(provider: credentialProvider, preferences: store.aiPreferences)
+                    }.disabled(busy)
+                    Divider()
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("连接测试").font(.headline)
+                        Text("用一道自编 HTTP 练习题检查当前作答、复核及可选检索配置，不需要登录学习通。测试会发送 \(store.aiPreferences.requestLimit) 次 API 请求，并按你的 API 账号计费。")
+                            .font(.caption).foregroundStyle(.secondary)
+                        HStack {
+                            Button("测试当前 AI 配置") { store.testAIConnection() }.disabled(busy)
+                            if store.aiTestRunning { ProgressView().controlSize(.small); Button("取消测试") { store.cancelAITest() } }
+                        }
+                        if !store.aiTestMessage.isEmpty { Text(store.aiTestMessage).font(.caption).textSelection(.enabled) }
+                    }
+                    Divider()
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("数据与准确性").font(.headline)
+                        Text("仅向你选择的服务发送题干、题型、选项、空格数和已有的检索资料；联网查证还会向 OpenAI 发送题目。账号密码和浏览器 Cookie 不会进入 API 请求。")
+                        Text("密钥分别保存在这台 Mac 的钥匙串，已保存的内容不会回显。软件使用各家的开发者 API，需要对应 API 密钥及额度；不会创建密钥或更改账单。")
+                        Text("两轮一致和可点击来源都不能保证正确。错误、分歧、无法完整读取的题目会暂停自动填写。")
+                    }.font(.caption).foregroundStyle(.secondary)
+                }.padding(.trailing, 8)
+                }
             }
+            HStack { Link("项目与使用说明", destination: URL(string: "https://github.com/hhhoratioxu/HoriStudy")!); Spacer(); Text("HoriStudy 0.2.0 Preview 3").foregroundStyle(.tertiary) }.font(.caption)
+        }.padding(26).frame(width: 700, height: 710)
+        .onAppear { credentialProvider = store.aiPreferences.answer.provider }
+        .onDisappear { if store.answerConnectionMode == .api { store.cancelAITest() } }
+    }
+
+    var webSettings: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("使用已登录网页的账号与订阅").font(.headline)
+            Text("不需要 API 密钥。在真实网站中自行登录，模型、联网、Chat / Work 和订阅权益按网站显示为准。HoriStudy 不会把普通账号变成付费账号，也不会绕过额度或登录验证。")
+                .font(.caption).foregroundStyle(.secondary)
+            Picker("作答网页", selection: $store.webPreferences.answer) { ForEach(WebAIProvider.allCases) { Text($0.title).tag($0) } }
+            Picker("复核网页", selection: $store.webPreferences.review) { ForEach(WebAIProvider.allCases) { Text($0.title).tag($0) } }
+            HStack {
+                Button("登录作答网页") { dismiss(); store.openWebAI(store.webPreferences.answer) }
+                Button("登录复核网页") { dismiss(); store.openWebAI(store.webPreferences.review) }
+            }
+            Text("每题开两次新会话，先作答、再复核，可能出现在网站的聊天历史中。网页中已有草稿、附件、正在生成的回答或登录验证时会暂停。网站长期记忆仍可能影响独立性。")
+                .font(.caption).foregroundStyle(.secondary)
             Divider()
-            VStack(alignment: .leading, spacing: 12) {
-                Text("两轮核验").font(.headline)
-                HStack { Text("答案模型").frame(width: 76, alignment: .leading); TextField("模型名称", text: $store.answerModel).textFieldStyle(.roundedBorder) }
-                HStack { Text("复核模型").frame(width: 76, alignment: .leading); TextField("模型名称", text: $store.reviewModel).textFieldStyle(.roundedBorder) }
-                Text("答案模型需要支持 Responses API、web_search 和结构化输出；复核模型需要支持结构化输出。你可以使用自己有权限的不同模型。")
-                    .font(.caption).foregroundStyle(.secondary)
-                Stepper("每次最多处理 \(store.maxQuestions) 道题", value: $store.maxQuestions, in: 1...100)
-            }.disabled(store.running)
+            Toggle("允许自动填写网页两轮一致的答案草稿", isOn: $store.webPreferences.autoFillAgreedDrafts)
+            Text("网页中的链接尚未经过软件独立核实，两轮一致也可能一起出错。默认关闭此选项；关闭时可在核对后逐题填入。开启后还需主界面的“核验通过后自动填写”处于打开状态。")
+                .font(.caption).foregroundStyle(.orange)
+            Stepper("每次最多处理 \(store.maxQuestions) 道题", value: $store.maxQuestions, in: 1...100)
             Divider()
-            VStack(alignment: .leading, spacing: 8) {
-                Text("数据与准确性").font(.headline)
-                Text("主动开始核验时，仅向 OpenAI 发送识别出的题干、题型、选项和空格数。联网检索还会使用与题目相关的搜索词；账号密码和浏览器 Cookie 不会进入请求。")
-                Text("每道未命中题库的题目包含检索、答案、复核 3 次请求；API 和检索按你的账号计费。软件不会创建密钥或修改账单。")
-                Text("两轮一致只能降低部分错误，无法保证正确。导入题库的答案、主观题和资料本身也需要核对。")
-            }.font(.caption).foregroundStyle(.secondary)
-            HStack { Link("项目与使用说明", destination: URL(string: "https://github.com/hhhoratioxu/HoriStudy")!); Spacer(); Text("HoriStudy 0.1.1 Preview 2").foregroundStyle(.tertiary) }.font(.caption)
-        }.padding(28).frame(width: 590)
-        .onAppear {
-            do { key = try KeychainStore.read(); keyWasLoaded = true; store.keyConfigured = !key.isEmpty }
-            catch { message = error.localizedDescription }
+            Text("先用示例题检查连接").font(.headline)
+            Text("先登录所选网页，再运行一道自编 HTTP 练习题。测试会发送两条网页消息并使用网站当前额度；不会填写课程页面。")
+                .font(.caption).foregroundStyle(.secondary)
+            Button("测试网页版作答") { dismiss(); store.testAIConnection() }
+            if !store.aiTestMessage.isEmpty { Text(store.aiTestMessage).font(.caption).textSelection(.enabled) }
+            Divider()
+            Text("登录与数据").font(.headline)
+            Text("各服务的登录状态保存在本应用独立的 WebKit 网站存储中。网页自动化只读取输入区、本次回答及其可见链接，不复制其他浏览器的 Cookie 或提取账号令牌。题目会发送给你选择的网站，并受该站的数据与聊天历史设置管理。")
+                .font(.caption).foregroundStyle(.secondary)
+            Text("有的网站可能限制内嵌浏览器登录，网页改版也可能使发送或读取失效。此时会暂停；可以在默认浏览器中手动发送“复制本题提示”的内容，再复制 JSON 回到“导入复制的回答”。")
+                .font(.caption).foregroundStyle(.secondary)
+        }.disabled(busy).padding(.trailing, 8)
+    }
+}
+
+struct ProviderKeyView: View {
+    let provider: AIProvider
+    let preferences: AIPreferences
+    @State private var key = ""
+    @State private var saved = false
+    @State private var message = ""
+    private var scope: CredentialScope? { try? preferences.scope(for: provider) }
+    private var scopeID: String { scope.map { $0.service + ":" + $0.account } ?? "invalid" }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label(saved ? "已在本机保存此服务的密钥" : "尚未保存此服务的密钥", systemImage: saved ? "key.fill" : "key")
+                .font(.caption).foregroundStyle(saved ? accent : .secondary)
+            SecureField("输入新 API 密钥（已保存的密钥不会显示）", text: $key).textFieldStyle(.roundedBorder)
+            HStack {
+                Button("保存到钥匙串") {
+                    guard let scope else { return }
+                    let value = key.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !value.contains(where: { $0.isWhitespace || $0.isNewline }) else { message = "密钥不能包含空格。"; return }
+                    do { try KeychainStore.save(value, scope: scope); key = ""; saved = true; message = "密钥已保存。可在下方测试当前配置。" }
+                    catch { message = error.localizedDescription }
+                }.disabled(scope == nil || key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                Button("移除此密钥") {
+                    guard let scope else { return }
+                    do { try KeychainStore.save("", scope: scope); key = ""; saved = false; message = "已移除此服务的本机密钥。" }
+                    catch { message = error.localizedDescription }
+                }.disabled(scope == nil || !saved)
+                Spacer()
+                if let url = provider.consoleURL { Link("获取 API 密钥", destination: url) }
+            }.font(.caption)
+            if !message.isEmpty { Text(message).font(.caption).foregroundStyle(.secondary) }
         }
+        .onAppear { refresh() }
+        .onChange(of: scopeID) { _, _ in refresh() }
+    }
+    private func refresh() {
+        key = ""; message = ""; saved = false
+        guard let scope else { message = "请先填写有效的 HTTPS Base URL。"; return }
+        do { saved = try KeychainStore.contains(scope: scope) }
+        catch { message = error.localizedDescription }
     }
 }

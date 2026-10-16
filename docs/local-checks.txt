@@ -42,6 +42,58 @@ PASS: independent review uses configured model
 PASS: provider error bodies are not exposed
 PASS: quota errors produce actionable message without retries
 Mock transport checks completed; no live API request was made.
+PASS: deepSeek alone returns a clearly labelled draft
+PASS: deepSeek uses its own endpoint without requiring OpenAI
+PASS: deepSeek uses only its scoped key and excludes browser cookies
+PASS: deepSeek selects the independent review model
+PASS: deepSeek requests documented JSON Object output
+PASS: doubao alone returns a clearly labelled draft
+PASS: doubao uses its own endpoint without requiring OpenAI
+PASS: doubao uses only its scoped key and excludes browser cookies
+PASS: doubao selects the independent review model
+PASS: doubao requests documented JSON Object output
+PASS: custom alone returns a clearly labelled draft
+PASS: custom uses its own endpoint without requiring OpenAI
+PASS: custom uses only its scoped key and excludes browser cookies
+PASS: custom selects the independent review model
+PASS: custom service can omit JSON mode and provider-specific extensions
+PASS: OpenAI research can support DeepSeek answering and Doubao independent review
+PASS: mixed pipeline routes to three official hosts
+PASS: mixed pipeline never shares one provider credential with another
+PASS: cross-provider review receives evidence without the first answer or browser identifiers
+PASS: missing review key stops before any request
+PASS: existing OpenAI keychain identity remains compatible
+PASS: custom keys are isolated by normalized exact Base URL
+PASS: invalid custom URL rejected: insecure scheme
+PASS: invalid custom URL rejected: credentials, query or full endpoint
+PASS: invalid custom URL rejected: credentials, query or full endpoint
+PASS: invalid custom URL rejected: credentials, query or full endpoint
+PASS: API delegate refuses redirected credential forwarding
+PASS: truncated chat response cannot become an answer
+PASS: extra answer fields are rejected even without server schema enforcement
+PASS: web prompt excludes page identifiers and binds a request nonce
+PASS: web parser accepts a matching complete fenced JSON answer
+PASS: web parser rejects stale or unrelated request nonce
+PASS: web agreement stays a draft by default
+PASS: explicit preference permits filling an agreed web draft
+PASS: web disagreement still blocks opted-in automatic filling
+Provider and web-format checks: 35 passed; mocked API transport only.
+PASS: web adapter recognizes the real ChatGPT composer selector in WebKit fixture
+PASS: web adapter rejects another provider's host
+PASS: web automation never overwrites an existing draft
+PASS: web preparation writes and verifies the exact prompt
+PASS: web preparation dispatches the website input event
+PASS: web submission clicks the normal send button once
+PASS: web submission refuses duplicate sends
+PASS: duplicate rejection makes no second website submission
+PASS: complete-looking JSON without website completion stays pending
+PASS: completed web response is tied to the current request and decoded
+PASS: visible stop-generation control blocks completion even when JSON and old completion markers exist
+PASS: web adapter cannot read a response under an unrelated request ID
+PASS: web workflow leaves login fields untouched
+PASS: independent web review opens a fresh conversation through the website
+PASS: production native web workspace completes two fresh correlated fixture conversations
+Web chat checks: 15 passed; local synthetic pages only, no account or subscription was used.
 PASS: blank login popup has a real WebKit window
 PASS: popup keeps its opener page alive
 PASS: login popup retains window.opener

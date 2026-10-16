@@ -17,6 +17,8 @@ final class AdapterHarness: NSObject, WKNavigationDelegate, WKScriptMessageHandl
     func start() async throws {
         try runCoreChecks()
         try await runNetworkChecks()
+        try await runProviderChecks()
+        try await runWebChatChecks()
         try await runBrowserChecks()
         let config = WKWebViewConfiguration()
         config.mediaTypesRequiringUserActionForPlayback = []
