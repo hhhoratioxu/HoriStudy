@@ -38,13 +38,17 @@ struct ContentView: View {
     @ObservedObject var browser: BrowserController
     @State private var showWelcome = true
     @State private var urlText = "https://i.chaoxing.com"
+    @State private var showDiagnostics = false
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 Image(systemName: "book.closed.fill").font(.title2).foregroundStyle(accent)
                     .frame(width: 36, height: 36).background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 10))
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("HoriStudy").font(.system(size: 17, weight: .bold, design: .rounded))
+                    HStack(spacing: 8) {
+                        Text("HoriStudy").font(.system(size: 17, weight: .bold, design: .rounded))
+                        Text("Preview 2").font(.system(size: 10, weight: .semibold)).foregroundStyle(accent)
+                    }
                     Text("学习通 · 资料查证与网页自动化").font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -64,7 +68,24 @@ struct ContentView: View {
                         .textFieldStyle(.plain).onSubmit { showWelcome = false; store.pause(); browser.open(urlText) }
                 }.padding(8).background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 7))
                 Button("打开学习通") { showWelcome = false; browser.open() }
+                Button { showDiagnostics = true } label: { Image(systemName: "stethoscope") }.help("登录诊断")
             }.buttonStyle(.borderless).padding(.horizontal, 16).padding(.vertical, 8)
+            if browser.pages.count > 1 {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(browser.pages) { page in
+                            HStack(spacing: 6) {
+                                Button(page.title) { store.pause(); browser.selectPage(page.id) }.lineLimit(1)
+                                    .foregroundStyle(page.id == browser.activePageID ? accent : .secondary)
+                                if page.openerID != nil {
+                                    Button { store.pause(); browser.closePage(page.id) } label: { Image(systemName: "xmark") }.help("关闭此页并返回")
+                                }
+                            }.font(.caption).padding(.horizontal, 10).padding(.vertical, 7)
+                                .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 7))
+                        }
+                    }.padding(.horizontal, 16).padding(.bottom, 8)
+                }
+            }
             Divider()
             HSplitView {
                 ZStack {
@@ -86,6 +107,14 @@ struct ContentView: View {
         }
         .tint(accent)
         .sheet(isPresented: $store.showSettings) { SettingsView(store: store) }
+        .sheet(isPresented: $showDiagnostics) {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack { Text("登录诊断").font(.title2.bold()); Spacer(); Button("完成") { showDiagnostics = false } }
+                Text("记录只保留在本机，包含协议、主机名和错误码。不会记录账号、密码、验证码、Cookie、页面路径或查询参数。")
+                    .font(.caption).foregroundStyle(.secondary)
+                ScrollView { Text(browser.diagnosticText).font(.system(size: 11, design: .monospaced)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }
+            }.padding(24).frame(width: 680, height: 430)
+        }
         .alert("操作提示", isPresented: Binding(get: { !store.error.isEmpty }, set: { if !$0 { store.error = "" } })) {
             Button("知道了") { store.error = "" }
         } message: { Text(store.error) }
@@ -263,7 +292,7 @@ struct SettingsView: View {
                 Text("每道未命中题库的题目包含检索、答案、复核 3 次请求；API 和检索按你的账号计费。软件不会创建密钥或修改账单。")
                 Text("两轮一致只能降低部分错误，无法保证正确。导入题库的答案、主观题和资料本身也需要核对。")
             }.font(.caption).foregroundStyle(.secondary)
-            HStack { Link("项目与使用说明", destination: URL(string: "https://github.com/hhhoratioxu/HoriStudy")!); Spacer(); Text("HoriStudy 0.1.0 Preview").foregroundStyle(.tertiary) }.font(.caption)
+            HStack { Link("项目与使用说明", destination: URL(string: "https://github.com/hhhoratioxu/HoriStudy")!); Spacer(); Text("HoriStudy 0.1.1 Preview 2").foregroundStyle(.tertiary) }.font(.caption)
         }.padding(28).frame(width: 590)
         .onAppear {
             do { key = try KeychainStore.read(); keyWasLoaded = true; store.keyConfigured = !key.isEmpty }

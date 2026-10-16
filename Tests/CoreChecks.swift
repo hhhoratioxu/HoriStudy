@@ -12,6 +12,25 @@ func rejects(_ label: String, _ action: () throws -> Void) {
 
 func runCoreChecks() throws {
     let source = Citation(id: "s1", title: "Reference", url: "https://example.org/reference")
+    if case .cancelled = BrowserFailure.classify(NSError(domain: "WebKitErrorDomain", code: 102)) {
+        check(true, "WebKit policy interruption is not a login failure")
+    } else { check(false, "WebKit policy interruption is not a login failure") }
+    if case .failure = BrowserFailure.classify(NSError(domain: NSURLErrorDomain, code: 102)) {
+        check(true, "unrelated error codes are not silently suppressed")
+    } else { check(false, "unrelated error codes are not silently suppressed") }
+    let external = NSError(domain: NSURLErrorDomain, code: NSURLErrorUnsupportedURL,
+        userInfo: [NSURLErrorFailingURLStringErrorKey: "chaoxing://login?token=PRIVATE_SENTINEL"])
+    if case .unsupportedExternal(let scheme) = BrowserFailure.classify(external) {
+        check(scheme == "chaoxing", "unsupported app probe identified without its query")
+    } else { check(false, "unsupported app probe identified without its query") }
+    let httpsFailure = NSError(domain: NSURLErrorDomain, code: NSURLErrorUnsupportedURL,
+        userInfo: [NSURLErrorFailingURLErrorKey: URL(string: "https://passport2.chaoxing.com/private-path?token=PRIVATE_SENTINEL")!])
+    if case .failure(let message) = BrowserFailure.classify(httpsFailure) {
+        check(!message.contains("PRIVATE_SENTINEL") && !message.contains("private-path"), "real HTTPS navigation failures remain visible and redacted")
+    } else { check(false, "real HTTPS navigation failures remain visible and redacted") }
+    let diagnostic = BrowserDiagnostic(event: "failed", url: BrowserFailure.failingURL(httpsFailure), error: httpsFailure)
+    let diagnosticJSON = String(decoding: try JSONEncoder().encode(diagnostic), as: UTF8.self)
+    check(!diagnosticJSON.contains("PRIVATE_SENTINEL") && !diagnosticJSON.contains("private-path") && !diagnosticJSON.contains("token="), "navigation diagnostics exclude paths and query secrets")
     check(StudyNavigationPolicy.trusted("mooc1.chaoxing.com"), "platform subdomain trusted")
     check(!StudyNavigationPolicy.trusted("chaoxing.com.evil.example") && !StudyNavigationPolicy.trusted("evilchaoxing.com"), "lookalike domains rejected")
     check(StudyNavigationPolicy.decide(url: URL(string: "javascript:void(0)")!, sourceHost: "passport2.chaoxing.com", mainFrame: true) == .allow, "official login JavaScript links work")

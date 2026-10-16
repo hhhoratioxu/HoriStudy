@@ -10,5 +10,5 @@ if [[ -x /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xcto
   sdk=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk
 fi
 "$compiler" -swift-version 5 -parse-as-library -sdk "$sdk" -target "$(uname -m)-apple-macosx14.0" \
-  Core/*.swift Tests/*.swift -o build/HoriStudyChecks
+  Core/*.swift App/BrowserController.swift Tests/*.swift -o build/HoriStudyChecks
 build/HoriStudyChecks 2>&1 | tee test-results/local-checks.txt
