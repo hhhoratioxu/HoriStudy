@@ -1,0 +1,11 @@
+.DS_Store
+.tools/
+.build/
+build/
+dist/
+.env*
+*.p12
+*.key
+*.mobileprovision
+*.xcuserstate
+test-results/

@@ -1,0 +1,24 @@
+name: macOS local checks and build
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Native core and WebKit fixture checks
+        run: zsh scripts/test.sh
+      - name: Build universal app
+        run: zsh scripts/build.sh --universal
+      - name: Package
+        run: zsh scripts/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HoriStudy-macOS
+          path: dist/*

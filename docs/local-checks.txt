@@ -1,0 +1,68 @@
+PASS: platform subdomain trusted
+PASS: lookalike domains rejected
+PASS: official login JavaScript links work
+PASS: untrusted JavaScript navigation rejected
+PASS: mobile deep link has nonfatal handling
+PASS: legacy official links upgrade to HTTPS
+PASS: web navigation cannot open local files
+PASS: credential-bearing navigation rejected
+PASS: valid cited agreement accepted
+PASS: disagreement stops autofill
+PASS: single choice rejects two options
+PASS: unknown option rejected
+PASS: uncertainty in either pass stops autofill
+PASS: fabricated citation rejected
+PASS: missing citations rejected
+PASS: unsafe citation scheme rejected
+PASS: image questions require manual review
+PASS: multiple choice ignores answer order
+PASS: duplicate choices rejected
+PASS: text normalization preserves negative signs
+PASS: blank count enforced
+PASS: bank matches option content after shuffle
+PASS: conflicting bank entries stop autofill
+PASS: bank requires complete exact option set
+PASS: API request excludes internal frame data
+PASS: research disables storage and requires search
+PASS: research reads actual tool annotations
+PASS: incomplete response rejected
+PASS: answer without completed search rejected
+PASS: provider refusal rejected
+PASS: review excludes browser identifiers
+Core checks: 31 passed
+PASS: mock transport completes research-answer-review pipeline
+PASS: pipeline sends exactly three requests without retries
+PASS: requests use only official Responses endpoint
+PASS: independent review uses configured model
+PASS: provider error bodies are not exposed
+PASS: quota errors produce actionable message without retries
+Mock transport checks completed; no live API request was made.
+PASS: page scripts cannot access private automation world
+PASS: production adapter ignores unrelated websites
+PASS: recognizes old and new question layouts
+PASS: normalizes option labels without changing content
+PASS: recognizes multiple and fill questions
+PASS: flags image questions
+PASS: detects unique next and submit buttons
+PASS: snapshot excludes unrelated page contents
+PASS: fills and reads back single choice
+PASS: filling never submits the form
+PASS: preserves existing student answer
+PASS: fills exact multiple choice set
+PASS: fills text using native input events
+PASS: rejects stale question signatures
+PASS: verification dialog pauses automation
+PASS: blocked page cannot navigate automatically
+PASS: nested layout preserves outer question stem
+PASS: legacy text fields are not mistaken for choices
+PASS: unsupported platform type cannot fall back to single choice
+PASS: one finished task does not imply all tasks completed
+PASS: adapter runs independently in embedded frames
+PASS: native frame routing fills and verifies embedded question
+PASS: video really advances without jumping to the end
+PASS: video playback rate remains normal
+PASS: cannot switch chapter before video ends
+PASS: pause stops actual media playback
+PASS: ended video alone never claims platform task completion
+WebKit adapter checks: 27 passed
+ALL LOCAL CHECKS PASSED

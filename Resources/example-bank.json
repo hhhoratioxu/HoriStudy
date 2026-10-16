@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "question": "根据 RFC 9110，HTTP 状态码 404 的名称是什么？",
+      "kind": "single",
+      "options": ["OK", "Not Found", "Created", "Unauthorized"],
+      "answers": ["Not Found"],
+      "explanation": "RFC 9110 第 15.5.5 节定义了 404 Not Found。此示例题由本项目自编。",
+      "source": {
+        "id": "rfc9110-404",
+        "title": "RFC 9110 — 15.5.5. 404 Not Found",
+        "url": "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.5.5"
+      }
+    }
+  ]
+}
