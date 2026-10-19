@@ -95,9 +95,19 @@ final class StudyStore: ObservableObject {
         showWebAI = true
         status = "正在使用 \(preferences.answer.title) 网页作答。"
         let (first, firstSources) = try await webAI.answer(question, provider: preferences.answer, reviewing: false) { self.webMessageCount += 1 }
+        update(question.id) {
+            $0.answer = CheckedAnswer(draft: first, sources: firstSources, verification: "网页第一轮 · 复核未完成", eligible: false,
+                reason: "第一轮回答已读取，尚未完成第二轮复核。不能作为通过两轮核验的答案。",
+                attribution: "网页登录作答：\(preferences.answer.title)")
+        }
         try Task.checkCancellation()
         status = "正在使用 \(preferences.review.title) 的新会话复核。"
-        let (second, secondSources) = try await webAI.answer(question, provider: preferences.review, reviewing: true) { self.webMessageCount += 1 }
+        let second: AnswerDraft
+        let secondSources: [Citation]
+        do {
+            (second, secondSources) = try await webAI.answer(question, provider: preferences.review, reviewing: true) { self.webMessageCount += 1 }
+        } catch is CancellationError { throw CancellationError() }
+        catch { throw StudyError.message("第一轮回答已读取；\(preferences.review.title) 网页复核未完成：\(error.localizedDescription)") }
         var sources = firstSources
         for source in secondSources where !sources.contains(where: { $0.url == source.url }) {
             sources.append(Citation(id: "web\(sources.count + 1)", title: source.title, url: source.url))
@@ -183,8 +193,14 @@ final class StudyStore: ObservableObject {
                 }
                 let sampleCorrect = answer.draft.selectedOptionIDs == ["o1"]
                 aiTestMessage = "已返回完整结果。\(sampleCorrect ? "本次示例答案符合预期。" : "本次示例答案不符合预期，请核对模型。")\(answer.verification)。单次示例不代表其他题目的准确率。"
-            } catch is CancellationError { aiTestMessage = "连接测试已取消。" }
-            catch { aiTestMessage = error.localizedDescription }
+                status = "AI 连接测试结束，请查看示例结果。"
+            } catch is CancellationError {
+                aiTestMessage = "连接测试已取消。"; status = "AI 连接测试已取消；已发出的网页请求可在网站停止。"
+                if webMode { webAI.status = "本机测试已取消，不会继续发送。" }
+            } catch {
+                aiTestMessage = error.localizedDescription; status = "AI 连接测试已暂停，请处理提示后再试。"
+                if webMode { webAI.status = "测试已暂停，不会自动重发。" }
+            }
         }
     }
 

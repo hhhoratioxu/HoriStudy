@@ -83,17 +83,38 @@ PASS: web adapter rejects another provider's host
 PASS: web automation never overwrites an existing draft
 PASS: web preparation writes and verifies the exact prompt
 PASS: web preparation dispatches the website input event
+PASS: rich web composer preserves ASCII JSON quotes and multiline prompt exactly
+PASS: rich composer readback matches the original prompt without smart punctuation
+PASS: rich composer treats question markup as literal text
 PASS: web submission clicks the normal send button once
 PASS: web submission refuses duplicate sends
 PASS: duplicate rejection makes no second website submission
 PASS: complete-looking JSON without website completion stays pending
 PASS: completed web response is tied to the current request and decoded
+PASS: web progress reports correlated response counts without exposing page content
+PASS: assistant wrappers using display contents remain readable
+PASS: logged-in ChatGPT semantic assistant headings correlate and decode the current answer
+PASS: copy controls belonging to an older answer cannot complete the current response
+PASS: logged-in layout completion actions may sit beside the current assistant body
+PASS: response actions before a shared-parent composer still establish completion
+PASS: actions beyond the composer never complete an earlier message
+PASS: a busy answer wrapper blocks sibling completion controls
 PASS: visible stop-generation control blocks completion even when JSON and old completion markers exist
 PASS: web adapter cannot read a response under an unrelated request ID
 PASS: web workflow leaves login fields untouched
+PASS: anonymous ChatGPT review stops before opening a clear-chat confirmation
+PASS: anonymous review preserves the first answer
+PASS: clear-chat confirmation is distinguished from an ordinary unavailable composer
+PASS: an open clear-chat confirmation prevents another send
 PASS: independent web review opens a fresh conversation through the website
+PASS: identical responsive new-chat controls resolve to one normal website action
+PASS: different chat and task actions remain ambiguous and are never guessed
+PASS: matching new-chat labels with different link destinations remain blocked
 PASS: production native web workspace completes two fresh correlated fixture conversations
-Web chat checks: 15 passed; local synthetic pages only, no account or subscription was used.
+PASS: normal new-chat navigation may briefly hide the composer without being mistaken for a confirmation
+PASS: native workspace surfaces the confirmation without waiting for the generic timeout
+PASS: blocked native review sends no additional message
+Web chat checks: 36 passed; local synthetic pages only, no account or subscription was used.
 PASS: blank login popup has a real WebKit window
 PASS: popup keeps its opener page alive
 PASS: login popup retains window.opener

@@ -47,7 +47,7 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 8) {
                         Text("HoriStudy").font(.system(size: 17, weight: .bold, design: .rounded))
-                        Text("Preview 3").font(.system(size: 10, weight: .semibold)).foregroundStyle(accent)
+                        Text("Preview 4").font(.system(size: 10, weight: .semibold)).foregroundStyle(accent)
                     }
                     Text("学习通 · 资料查证与网页自动化").font(.caption).foregroundStyle(.secondary)
                 }
@@ -347,7 +347,7 @@ struct SettingsView: View {
                 }.padding(.trailing, 8)
                 }
             }
-            HStack { Link("项目与使用说明", destination: URL(string: "https://github.com/hhhoratioxu/HoriStudy")!); Spacer(); Text("HoriStudy 0.2.0 Preview 3").foregroundStyle(.tertiary) }.font(.caption)
+            HStack { Link("项目与使用说明", destination: URL(string: "https://github.com/hhhoratioxu/HoriStudy")!); Spacer(); Text("HoriStudy 0.2.1 Preview 4").foregroundStyle(.tertiary) }.font(.caption)
         }.padding(26).frame(width: 700, height: 710)
         .onAppear { credentialProvider = store.aiPreferences.answer.provider }
         .onDisappear { if store.answerConnectionMode == .api { store.cancelAITest() } }

@@ -53,6 +53,10 @@ final class WebAIWorkspace: ObservableObject {
             for _ in 0..<40 {
                 try await Task.sleep(nanoseconds: 250_000_000)
                 let state = try await command("inspect")
+                // A login/clear-chat confirmation needs the user; do not keep waiting for a blank composer.
+                if ["conversationConfirmation", "authentication", "loginForNewConversation"].contains(state["kind"] as? String ?? "") {
+                    try requireOK(state)
+                }
                 if state["ok"] as? Bool == true, state["count"] as? Int == 0, state["draft"] as? Bool == false, state["busy"] as? Bool == false { ready = true; break }
             }
             guard ready else { throw StudyError.message("未能确认空白新对话，未发送题目。请在网页手动开启新对话。") }
@@ -73,6 +77,11 @@ final class WebAIWorkspace: ObservableObject {
         for _ in 0..<240 {
             try await Task.sleep(nanoseconds: 1_000_000_000)
             let result = try await command("reply"); try requireOK(result)
+            if result["done"] as? Bool != true {
+                if result["matching"] as? Int == 1 { status = result["busy"] as? Bool == true ? "本题 JSON 已找到，网页仍报告正在生成；不会重发。" : "本题完整 JSON 已找到，等待网站的回答完成标记；不会重发。" }
+                else if (result["observed"] as? Int ?? 0) > 0 { status = "已识别到本次回答，等待与本题标识匹配的完整 JSON；不会重发。" }
+                else { status = "题目已发送，尚未识别到本次回答。若网页已完成，可取消后手动复制导入；不会重发。" }
+            }
             guard result["done"] as? Bool == true, let text = result["text"] as? String else { stable = 0; continue }
             stable = text == previous ? stable + 1 : 0; previous = text
             guard stable >= 2 else { continue }
