@@ -37,6 +37,11 @@ func runCoreChecks() throws {
     check(StudyNavigationPolicy.decide(url: URL(string: "javascript:alert(1)")!, sourceHost: "example.org", mainFrame: true) == .cancel, "untrusted JavaScript navigation rejected")
     check(StudyNavigationPolicy.decide(url: URL(string: "chaoxing://login")!, sourceHost: "passport2.chaoxing.com", mainFrame: true) == .externalApp("chaoxing"), "mobile deep link has nonfatal handling")
     check(StudyNavigationPolicy.decide(url: URL(string: "http://i.chaoxing.com:80/path?q=1")!, sourceHost: "passport2.chaoxing.com", mainFrame: true) == .upgrade(URL(string: "https://i.chaoxing.com/path?q=1")!), "legacy official links upgrade to HTTPS")
+    check(StudyNavigationPolicy.decide(url: URL(string: "http://study.example.edu:80/space/index?course=fixture")!, sourceHost: "passport2.chaoxing.com", mainFrame: true) == .upgrade(URL(string: "https://study.example.edu/space/index?course=fixture")!), "institution login landing redirects preserve their destination while upgrading to HTTPS")
+    check(StudyNavigationPolicy.decide(url: URL(string: "http://study.example.edu/frame")!, sourceHost: "passport2.chaoxing.com", mainFrame: false) == .cancel, "custom-domain plaintext subframes remain blocked")
+    check(!StudyNavigationPolicy.trusted("study.example.edu"), "institution navigation does not expand course-automation trust")
+    check(StudyNavigationPolicy.decide(url: URL(string: "http://study.example.edu/path")!, sourceHost: "external.example", mainFrame: true) == .upgrade(URL(string: "https://study.example.edu/path")!), "HTTPS-first top-level navigation never permits a plaintext fallback")
+    check(StudyNavigationPolicy.decide(url: URL(string: "http://user:password@study.example.edu/path")!, sourceHost: "passport2.chaoxing.com", mainFrame: true) == .cancel, "institution upgrades still reject credential-bearing URLs")
     check(StudyNavigationPolicy.decide(url: URL(string: "file:///etc/passwd")!, sourceHost: "passport2.chaoxing.com", mainFrame: true) == .cancel, "web navigation cannot open local files")
     check(StudyNavigationPolicy.decide(url: URL(string: "https://user:password@example.org/")!, sourceHost: "passport2.chaoxing.com", mainFrame: true) == .cancel, "credential-bearing navigation rejected")
     let q = StudyQuestion(id: "private-frame:q1", frameID: "private-frame", signature: "private-signature",

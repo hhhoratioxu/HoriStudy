@@ -16,8 +16,11 @@ enum StudyNavigationPolicy {
         case "javascript": return trusted(sourceHost) ? .allow : .cancel
         case "data": return mainFrame ? .cancel : .allow
         case "http":
-            // Older official links still use HTTP. Preserve the destination using HTTPS.
-            guard let host = url.host, trusted(host), var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return .cancel }
+            // Schools may use their own landing domain after an official login.
+            // Upgrade top-level destinations to HTTPS; never fall back to HTTP.
+            // This does not grant the school's domain course-automation privileges.
+            guard let host = url.host, !host.isEmpty, trusted(host) || mainFrame,
+                  var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return .cancel }
             parts.scheme = "https"
             if parts.port == 80 { parts.port = nil }
             guard let upgraded = parts.url else { return .cancel }

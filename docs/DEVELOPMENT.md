@@ -20,6 +20,8 @@ Preview 4 针对实际 ChatGPT 登录版调整了富文本输入和完成状态�
 
 登录弹窗通过 WebKit 提供的同一 `WKWebViewConfiguration` 创建真实页面，保留 POST、共享网站数据与 `window.opener`，支持先打开空白窗口再跳转的登录流程。活动标签页切换后，题目操作只允许定位当前页的框架。正常策略取消（`WebKitErrorDomain 102`）与取消请求（`NSURLErrorDomain -999`）不会产生登录失败弹窗；HTTPS 的真正错误仍会显示。脱敏诊断只记录主机及错误码，不记录完整回调链接。
 
+Preview 5 为学校自定义落地页采用主页面 HTTPS 优先导航：旧 HTTP 跳转保留路径与参数，改用 HTTPS 请求，沿用系统证书校验，失败时不回退明文。自定义域名不会加入课程脚本可信列表，非超星域名的 HTTP 子框架仍被取消。
+
 ## 参考
 
 - [OpenAI Responses API：联网检索](https://developers.openai.com/api/docs/guides/tools-web-search)：工具必选、检索引用及来源显示。

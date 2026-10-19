@@ -9,6 +9,11 @@ PASS: official login JavaScript links work
 PASS: untrusted JavaScript navigation rejected
 PASS: mobile deep link has nonfatal handling
 PASS: legacy official links upgrade to HTTPS
+PASS: institution login landing redirects preserve their destination while upgrading to HTTPS
+PASS: custom-domain plaintext subframes remain blocked
+PASS: institution navigation does not expand course-automation trust
+PASS: HTTPS-first top-level navigation never permits a plaintext fallback
+PASS: institution upgrades still reject credential-bearing URLs
 PASS: web navigation cannot open local files
 PASS: credential-bearing navigation rejected
 PASS: valid cited agreement accepted
@@ -34,7 +39,7 @@ PASS: incomplete response rejected
 PASS: answer without completed search rejected
 PASS: provider refusal rejected
 PASS: review excludes browser identifiers
-Core checks: 36 passed
+Core checks: 41 passed
 PASS: mock transport completes research-answer-review pipeline
 PASS: pipeline sends exactly three requests without retries
 PASS: requests use only official Responses endpoint
